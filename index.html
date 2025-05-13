@@ -5,20 +5,20 @@
   <title>Control de luces Hue</title>
   <style>
     @font-face {
-    font-family: 'Emirates Bold';
-    src: url('https://c.ekstatic.net/shared/fonts/emirates/emirates-bold-v3.woff2') format('woff2');
-    font-weight: bold;
-    font-style: normal;
+      font-family: 'Emirates Bold';
+      src: url('https://c.ekstatic.net/shared/fonts/emirates/emirates-bold-v3.woff2') format('woff2');
+      font-weight: bold;
+      font-style: normal;
     }
 
     html, body {
       margin: 0;
       padding: 0;
       height: 100%;
+      font-family: 'Emirates Bold', sans-serif;
     }
 
     body {
-      font-family: 'Emirates Bold', sans-serif;
       background-repeat: no-repeat;
       background-attachment: fixed;
       background-size: cover;
@@ -67,9 +67,35 @@
       50% { opacity: 1; }
     }
 
-    #duneShape {
-      transition: fill 2s ease;
-    }
+.info-container {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;  /* Reducido un poco el tamaño de la fuente */
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  z-index: 999;
+  white-space: nowrap;  /* Previene el salto de línea */
+}
+
+.info-box {
+  background: #ffffff72;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;  /* Evita el salto de línea */
+  overflow: hidden;  /* Oculta el contenido desbordado */
+  text-overflow: ellipsis;  /* Añade puntos suspensivos si el contenido es demasiado largo */
+}
+
 
     .panel-container {
       position: fixed;
@@ -154,72 +180,38 @@
       width: 100%;
       height: 100%;
     }
-
-    .countdown-container {
+    .countdown-box {
       position: fixed;
-      top: 20px;
-      right: 20px;
-      background-color: rgba(255, 255, 255, 0.463);
-      padding: 16px;
-      border-radius: 12px;
-      font-size: 18px;
+      top: 6px;
+      right: 6px;
+      align-items: center;
+      font-size: 24px;
       font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .countdown {
-      text-align: center;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px 30px;
+      background-color: rgba(255, 255, 255, 0.5);
+      color: rgb(0, 0, 0);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       margin: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 300px;
-    }
-
-    .card h2 {
-      margin-top: 0;
-      font-size: 1.2em;
-      color: #333;
-    }
-
-    .value {
-      font-size: 1.6em;
-      color: #0077b6;
+      text-align: center;
+      width: max-content;
     }
   </style>
 </head>
-<body>
 
-  <div class="card">
-    <h2>Hora actual</h2>
-    <div id="hora" class="value">--:--:--</div>
-  </div>
-
-  <div class="card">
-    <h2>Fecha actual</h2>
-    <div id="fecha" class="value">--</div>
-  </div>
-
-  <div class="card">
-    <h2>Clima en Dubái</h2>
-    <div class="value">
-      <div>🌡️ Máx: <span id="tempMax">--</span>°C</div>
-      <div>🌡️ Mín: <span id="tempMin">--</span>°C</div>
-      <div>💧 Humedad: <span id="humedad">--</span>%</div>
-      <div>🌅 Amanecer: <span id="amanecer">--:--</span></div>
-      <div>🌇 Atardecer: <span id="atardecer">--:--</span></div>
-    </div>
-  </div>
-  </style>
-</head>
 <body>
 
 <div class="panel-container">
   <div class="panel" id="lightPanel"></div>
+  <div id="countdown" class="countdown-box">
+    Cargando...
+  </div>
+</div>
+
+<div class="info-container">
+  <div class="info-box" id="currentTime">Hora actual: --:--:--</div>
+  <div class="info-box" id="currentDate">Fecha: --/--/----</div>
+  <div class="info-box" id="dubaiWeather">Cargando clima de Dubái...</div>
 </div>
 
 <div class="desert-dune">
@@ -241,7 +233,6 @@
 </div>
 
 <script>
-  // Los horarios del bus
   const grosvenorToHQSchedule = [
     { gros: "00:43", hq: "01:03" }, { gros: "01:03", hq: "01:23" }, { gros: "01:23", hq: "01:43" },
     { gros: "01:43", hq: "02:03" }, { gros: "02:03", hq: "02:23" }, { gros: "02:23", hq: "02:43" },
@@ -265,35 +256,43 @@
     { gros: "23:28", hq: "23:48" }, { gros: "23:53", hq: "00:13" }, { gros: "00:18", hq: "00:38" }
   ];
 
-  function updateCountdown() {
+  function getNextBusTime() {
     const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-    let nextBus = null;
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    let nextBusTime = null;
+    
     for (let i = 0; i < grosvenorToHQSchedule.length; i++) {
-      if (currentTime < grosvenorToHQSchedule[i].gros) {
-        nextBus = grosvenorToHQSchedule[i];
+      const busTime = grosvenorToHQSchedule[i].gros.split(':');
+      const busHour = parseInt(busTime[0]);
+      const busMinute = parseInt(busTime[1]);
+      const busTotalMinutes = busHour * 60 + busMinute;
+
+      if (busTotalMinutes > currentTime) {
+        nextBusTime = busTotalMinutes;
         break;
       }
     }
 
-    if (nextBus) {
-      const busTime = new Date();
-      const [hour, minute] = nextBus.gros.split(':').map(num => parseInt(num, 10));
-      busTime.setHours(hour, minute, 0, 0);
-
-      const timeRemaining = busTime - now;
-      const minutesRemaining = Math.floor(timeRemaining / 60000);
-      const secondsRemaining = Math.floor((timeRemaining % 60000) / 1000);
-
-      document.getElementById('countdown').innerText = `Siguiente bus en ${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
-    } else {
-      document.getElementById('countdown').innerText = "No más buses hoy.";
-    }
+    return nextBusTime;
   }
 
-  // Actualizar la cuenta regresiva cada segundo
-  setInterval(updateCountdown, 1000);  // Se actualiza cada segundo
+  function updateCountdown() {
+    const nextBusTime = getNextBusTime();
+    if (nextBusTime === null) {
+      document.getElementById('countdown').innerText = 'No hay más buses hoy.';
+      return;
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    const minutesLeft = Math.floor((nextBusTime - currentTime) % 60);
+    const secondsLeft = 60 - now.getSeconds();
+
+    document.getElementById('countdown').innerText = `Siguiente bus en ${minutesLeft}m ${secondsLeft}s`;
+  }
+
+  setInterval(updateCountdown, 1000);
+  updateCountdown();
 </script>
 
 </body>
@@ -417,31 +416,34 @@
   setInterval(setDynamicBackground, 60000);
 </script>
   <script>
-    function actualizarHoraYFecha() {
-      const ahora = new Date();
-      const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById('hora').textContent = ahora.toLocaleTimeString('es-ES');
-      document.getElementById('fecha').textContent = ahora.toLocaleDateString('es-ES', opcionesFecha);
-    }
+  function updateTimeAndDate() {
+    const now = new Date();
+    document.getElementById('currentTime').textContent = `${now.toLocaleTimeString('es-ES')}`;
+    document.getElementById('currentDate').textContent = `${now.toLocaleDateString('es-ES')}`;
+  }
 
-    // Actualizar cada segundo
-    setInterval(actualizarHoraYFecha, 1000);
-    actualizarHoraYFecha();
+async function fetchDubaiWeather() {
+  try {
+    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=25.276987&longitude=55.296249&current=temperature_2m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=Asia%2FDubai');
+    const data = await response.json();
+    const current = data.current;
+    const today = data.daily;
 
-    // Datos meteorológicos estáticos
-    const climaDubai = {
-      tempMax: 40,
-      tempMin: 28,
-      humedad: 40,
-      amanecer: '05:35',
-      atardecer: '18:56'
-    };
+    // Mostrar la información en una sola línea
+    const html = `🌡 ${current.temperature_2m}°C (min: ${today.temperature_2m_min[0]}°C / max: ${today.temperature_2m_max[0]}°C) 
+                  💧 ${current.relative_humidity_2m}% 
+                  🌅 ${today.sunrise[0].split('T')[1]} / 🌇 ${today.sunset[0].split('T')[1]}`;
 
-    document.getElementById('tempMax').textContent = climaDubai.tempMax;
-    document.getElementById('tempMin').textContent = climaDubai.tempMin;
-    document.getElementById('humedad').textContent = climaDubai.humedad;
-    document.getElementById('amanecer').textContent = climaDubai.amanecer;
-    document.getElementById('atardecer').textContent = climaDubai.atardecer;
+    document.getElementById('dubaiWeather').innerHTML = html;
+  } catch (err) {
+    document.getElementById('dubaiWeather').textContent = 'Error cargando clima de Dubái';
+  }
+}
+
+
+  setInterval(updateTimeAndDate, 1000);
+  updateTimeAndDate();
+  fetchDubaiWeather();
   </script>
 </body>
 </html>
