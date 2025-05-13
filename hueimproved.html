@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Control de luces Hue</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      font-family: sans-serif;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+      transition: background 1s ease;
+      position: relative;
+      z-index: -3;
+    }
+
+    .atmosphere {
+      pointer-events: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background-color: white;
+  opacity: 0;
+  animation: appearStar 1s forwards, twinkle 2s infinite;
+}
+
+
+
+    @keyframes appearStar {
+      0% { opacity: 0; }
+      100% { opacity: 0.7; }
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; }
+    }
+
+    #duneShape {
+      transition: fill 2s ease;
+    }
+
+    .fab {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background-color: #ffd700;
+      color: black;
+      font-size: 28px;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      z-index: 999;
+      transition: background 0.3s;
+    }
+
+    .fab:hover {
+      background-color: #ffc107;
+    }
+
+    .panel-container {
+      position: fixed;
+      bottom: 100px;
+      left: 20px;
+      width: calc(100vw - 40px);
+      max-width: 100%;
+      z-index: 998;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      padding: 16px;
+      background: #ffffff80;
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      transform: translateX(-100%);
+      opacity: 0;
+      transition: transform 0.7s ease, opacity 0.7s ease;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+    }
+
+    .panel.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .light-box {
+      width: 100px;
+      height: 100px;
+      background-color: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 5px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .image-wrapper {
+      width: 80%;
+      height: 80%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .image-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .light-box:hover {
+      transform: scale(1.05);
+    }
+
+    .light-box img {
+      width: 85%;
+      height: 85%;
+      object-fit: contain;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transition: opacity 2s ease;
+      padding: 8px;
+    }
+
+    .light-box .on {
+      opacity: 0;
+    }
+
+    .light-box.active .on {
+      opacity: 1;
+    }
+
+    .light-box.active .off {
+      opacity: 0;
+    }
+
+    .desert-dune {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60vh;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .desert-dune svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div class="fab" id="togglePanel">💡</div>
+
+<div class="panel-container">
+  <div class="panel" id="lightPanel"></div>
+</div>
+
+<div class="desert-dune">
+  <svg viewBox="0 0 1440 320" preserveAspectRatio="none">
+    <path id="duneShape" fill="#f4d9b0" d="M0,320 
+      C300,260 500,180 720,200 
+      C940,220 1140,300 1440,240 
+      L1440,320 
+      L0,320 Z"></path>
+  </svg>
+</div>
+
+<div class="atmosphere"></div>
+<div class="stars"></div>
+
+<script>
+  const BRIDGE_IP = "192.168.86.245";
+  const USERNAME = "z7nNaSwtiToHfwMi5kUSLrS1u8LhLpv7Y2eMComM";
+
+  const lights = [
+    { id: 60, name: "Metal 1", offIcon: "https://i.imghippo.com/files/Nqg4384txU.png", onIcon: "https://i.imghippo.com/files/xqv6372EwA.png" },
+    { id: 59, name: "Metal 2", offIcon: "https://i.imghippo.com/files/Nqg4384txU.png", onIcon: "https://i.imghippo.com/files/opW5547fb.png" },
+    { id: 55, name: "Suelo",    offIcon: "https://i.imghippo.com/files/bF1260jcE.png", onIcon: "https://i.imghippo.com/files/vxV6303WRk.png" },
+    { id: 54, name: "Tocador",  offIcon: "https://i.imghippo.com/files/bF1260jcE.png", onIcon: "https://i.imghippo.com/files/vxV6303WRk.png" },
+    { id: 53, name: "Round",    offIcon: "https://i.imghippo.com/files/aXXs1231xw.png", onIcon: "https://i.imghippo.com/files/PDMj5004NAk.png" },
+    { id: 52, name: "Chroma",   offIcon: "https://i.imghippo.com/files/img9596lGE.png", onIcon: "https://i.imghippo.com/files/cZR8869uNw.png" },
+    { id: 56, name: "Techo 1" },
+    { id: 57, name: "Techo 2" },
+    { id: 58, name: "Techo 3" }
+  ];
+
+  const panel = document.getElementById('lightPanel');
+  const togglePanelBtn = document.getElementById('togglePanel');
+
+  togglePanelBtn.addEventListener('click', () => {
+    panel.classList.toggle('show');
+  });
+
+  async function getLightState(id) {
+    const res = await fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/${id}`);
+    const data = await res.json();
+    return data.state.on;
+  }
+
+  async function toggleLight(id, lightBox) {
+    const isOn = lightBox.classList.contains('active');
+    const newState = !isOn;
+
+    lightBox.classList.toggle('active');
+
+    await fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/${id}/state`, {
+      method: 'PUT',
+      body: JSON.stringify({ on: newState })
+    });
+  }
+
+  async function createLightBoxes() {
+    for (const light of lights) {
+      const lightBox = document.createElement('div');
+      lightBox.classList.add('light-box');
+
+      const offImg = document.createElement('img');
+      const onImg = document.createElement('img');
+
+      offImg.classList.add('off');
+      onImg.classList.add('on');
+
+      offImg.src = light.offIcon || 'https://via.placeholder.com/90?text=OFF';
+      onImg.src = light.onIcon || 'https://via.placeholder.com/90?text=ON';
+
+      lightBox.appendChild(offImg);
+      lightBox.appendChild(onImg);
+      panel.appendChild(lightBox);
+
+      try {
+        const isOn = await getLightState(light.id);
+        if (isOn) lightBox.classList.add('active');
+      } catch (err) {
+        console.error(`Error obteniendo estado de ${light.name}`, err);
+      }
+
+      lightBox.addEventListener('click', () => toggleLight(light.id, lightBox));
+    }
+  }
+
+  createLightBoxes();
+
+function setDynamicBackground() {
+  const now = new Date(); // Hora local del navegador
+  const hour = now.getHours();
+
+  let gradient = '';
+  let duneColor = '';
+
+  if (hour >= 5 && hour < 7) {
+    gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)'; // Amanecer
+    duneColor = '#F4D9B0';
+  } else if (hour >= 7 && hour < 11) {
+    gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)'; // Mañana
+    duneColor = '#F7E6B6';
+  } else if (hour >= 11 && hour < 15) {
+    gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)'; // Mediodía
+    duneColor = '#FCE7A5';
+  } else if (hour >= 15 && hour < 18) {
+    gradient = 'linear-gradient(to top, #FF6347, #FF4500)'; // Tarde
+    duneColor = '#E6B07D';
+  } else {
+    gradient = 'linear-gradient(to top, #001f3f, #000000)'; // Noche
+    duneColor = '#3A2B47';
+    createStars();
+  }
+
+document.body.style.backgroundImage = gradient;
+
+  const dune = document.getElementById('duneShape');
+  if (dune) dune.setAttribute('fill', duneColor);
+}
+
+  function createStars(count = 100) {
+    const container = document.querySelector('.stars');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const star = document.createElement('div');
+      star.classList.add('star');
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      const size = `${Math.random() * 2 + 1}px`;
+      star.style.width = size;
+      star.style.height = size;
+      star.style.animationDelay = `${Math.random() * 2}s`;
+      container.appendChild(star);
+    }
+  }
+
+  setDynamicBackground();
+  setInterval(setDynamicBackground, 60000);
+</script>
+
+</body>
+</html>
