@@ -206,26 +206,13 @@
     text-align: center;
     width: max-content;
   }
-    .event-container {
-      position: fixed;
-      top: 50%;
-      right: 6px;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.8);
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      width: 300px;
-      font-size: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
   </style>
 </head>
 
 <body>
 
 <div id="eventContainer" class="event-container">
-  Cargando eventos...
+  Loading events...
 </div>
 
 <div class="sun-and-moon">
@@ -236,14 +223,14 @@
 <div class="panel-container">
   <div class="panel" id="lightPanel"></div>
   <div id="countdown" class="countdown-box">
-    Cargando...
+    Loading...
   </div>
 </div>
 
 <div class="info-container">
   <div class="info-box" id="currentTime">Hora actual: --:--:--</div>
   <div class="info-box" id="currentDate">Fecha: --/--/----</div>
-  <div class="info-box" id="dubaiWeather">Cargando clima de Dubái...</div>
+  <div class="info-box" id="dubaiWeather">Loading weather...</div>
 </div>
 
 <div class="desert-dune">
@@ -319,13 +306,18 @@
     const minutesLeft = Math.floor((nextBusTime - currentTime) % 60);
     const secondsLeft = 60 - now.getSeconds();
 
-    document.getElementById('countdown').innerText = `Siguiente bus en ${minutesLeft}m ${secondsLeft}s`;
+    document.getElementById('countdown').innerText = `Next bus in ${minutesLeft}m ${secondsLeft}s`;
   }
 
   setInterval(updateCountdown, 1000);
   updateCountdown();
 </script>
-
+<div id="calendar-window" style="position: fixed; bottom: 20px; left: 20px; width: 320px; height: 320px; background: #ffffff73; border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 18px; z-index: 1000; text-align: center;">
+    <h2 id="calendarTitle" style="margin: 0 0 10px 0; font-size: 20px; text-align: center;">ROSTER</h2>
+    <div id="current-date" style="font-size: 18px; margin-bottom: 18px; text-align: center;"></div>
+  </div>
+  <div id="events-list" style="font-size: 18px;"></div>
+</div>
 </body>
 </html>
 
@@ -496,86 +488,349 @@ async function fetchDubaiWeather() {
     updateSunAndMoon();
   </script>
 <script>
-  // Function to fetch events from the iCloud calendar and update the event container
-async function fetchEvents() {
-  try {
-    const calendarUrl = 'https://p108-caldav.icloud.com/published/2/MTUxMDYwNTYxNDE1MTA2MOcLt9DeC6aDOBzlZCUDejDdugx2IBT9HDhJA6jGIXwDHsR2_c0JH71EnIqBSkhBPTX-OE44UuANI0LecwDIOcg';
 
-    // Intentamos obtener el archivo del calendario
-    const response = await fetch(calendarUrl);
-    if (!response.ok) {
-      throw new Error('No se pudo acceder al calendario. Código de error: ' + response.status);
+        // Calendar JavaScript
+        const calendarWindow = document.getElementById('calendar-window');
+        const calendarEventsList = document.getElementById('events-list');
+        const calendarCurrentDate = document.getElementById('current-date');
+
+        const calendarUrl = 'https://p108-caldav.icloud.com/published/2/MTUxMDYwNTYxNDE1MTA2MOcLt9DeC6aDOBzlZCUDejDdugx2IBT9HDhJA6jGIXwDHsR2_c0JH71EnIqBSkhBPTX-OE44UuANI0LecwDIOcg';
+
+        let isCalendarDragging = false;
+        let currentCalendarX;
+        let currentCalendarY;
+        let initialCalendarX;
+        let initialCalendarY;
+        let showingToday = true;
+
+
+        function startCalendarDragging(e) {
+            if (e.type === 'touchstart') {
+                e.preventDefault();
+            }
+            let clientX, clientY;
+            if (e.type === 'mousedown') {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            } else if (e.type === 'touchstart' && e.touches.length === 1) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                return;
+            }
+            const rect = calendarWindow.getBoundingClientRect();
+            initialCalendarX = clientX - rect.left;
+            initialCalendarY = clientY - rect.top;
+            if (e.target === calendarTitleBar || e.target === calendarTitle) {
+                isCalendarDragging = true;
+                calendarWindow.style.cursor = 'move';
+                calendarWindow.style.transform = 'none';
+            }
+        }
+
+        function dragCalendar(e) {
+            if (isCalendarDragging) {
+                e.preventDefault();
+                let clientX, clientY;
+                if (e.type === 'mousemove') {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                } else if (e.type === 'touchmove' && e.touches.length === 1) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    return;
+                }
+                currentCalendarX = clientX - initialCalendarX;
+                currentCalendarY = clientY - initialCalendarY;
+                const maxX = window.innerWidth - calendarWindow.offsetWidth;
+                const maxY = window.innerHeight - calendarWindow.offsetHeight;
+                currentCalendarX = Math.min(Math.max(0, currentCalendarX), maxX);
+                currentCalendarY = Math.min(Math.max(0, currentCalendarY), maxY);
+                calendarWindow.style.left = currentCalendarX + 'px';
+                calendarWindow.style.top = currentCalendarY + 'px';
+            }
+        }
+
+        function stopCalendarDragging() {
+            if (isCalendarDragging) {
+                isCalendarDragging = false;
+                calendarWindow.style.cursor = 'default';
+            }
+        }
+
+        function updateCalendarDate() {
+    const dateElement = document.getElementById('current-date');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const date = showingToday ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    dateElement.textContent = date.toLocaleDateString('en-US', options);
+}
+
+        function formatCalendarTime(date) {
+            if (!(date instanceof Date) || isNaN(date)) {
+                return 'Invalid time';
+            }
+            return date.toLocaleTimeString(navigator.language || 'en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        async function fetchCalendarEvents() {
+            calendarEventsList.innerHTML = '<div class="loading-spinner"></div>';
+            try {
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const response = await fetch(proxyUrl + encodeURIComponent(calendarUrl));
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                }
+                const icsData = await response.text();
+                if (!icsData) {
+                    throw new Error('Empty response received');
+                }
+                const events = parseICS(icsData);
+                displayCalendarEvents(events);
+            } catch (error) {
+                console.error('Error fetching calendar:', error);
+                calendarEventsList.innerHTML = `<div class="loading">Unable to load events: ${error.message}</div>`;
+            }
+        }
+
+        function parseICS(icsData) {
+            const events = [];
+            const lines = icsData.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+            let currentEvent = null;
+            let currentLine = '';
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                if (line.startsWith(' ') || line.startsWith('\t')) {
+                    if (currentLine) {
+                        currentLine += line.substring(1);
+                    }
+                    continue;
+                } else {
+                    if (currentLine) {
+                        processICSLine(currentLine, currentEvent);
+                    }
+                    currentLine = line;
+                }
+                if (currentLine.toUpperCase() === 'BEGIN:VEVENT') {
+                    currentEvent = {};
+                    currentLine = '';
+                } else if (currentLine.toUpperCase() === 'END:VEVENT') {
+                    if (currentEvent && currentEvent.dtstart && currentEvent.summary) {
+                        if (!currentEvent.dtend && currentEvent.dtstartIsDate) {
+                            currentEvent.dtend = currentEvent.dtstart;
+                        }
+                        events.push(currentEvent);
+                    }
+                    currentEvent = null;
+                    currentLine = '';
+                }
+            }
+            if (currentLine) {
+                processICSLine(currentLine, currentEvent);
+            }
+            return events;
+        }
+
+        function processICSLine(line, eventObj) {
+            if (!eventObj || !line.includes(':')) return;
+            const [keyPart, ...valueParts] = line.split(':');
+            const value = valueParts.join(':');
+            const keyParts = keyPart.split(';');
+            const key = keyParts[0].toUpperCase();
+            if (key === 'DTSTART') {
+                const parsedDate = parseICSDate(value, keyPart);
+                eventObj.dtstart = parsedDate.date;
+                eventObj.dtstartIsDate = parsedDate.isDate;
+            } else if (key === 'DTEND') {
+                const parsedDate = parseICSDate(value, keyPart);
+                eventObj.dtend = parsedDate.date;
+                eventObj.dtendIsDate = parsedDate.isDate;
+            } else if (key === 'SUMMARY') {
+                eventObj.summary = value.replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\n/g, '\n');
+            }
+        }
+
+        function parseICSDate(dateStr, keyPart) {
+            const isDateOnly = keyPart.toUpperCase().includes('VALUE=DATE');
+            const cleanStr = dateStr.replace('T', '').replace('Z', '');
+            const year = parseInt(cleanStr.substr(0, 4), 10);
+            const month = parseInt(cleanStr.substr(4, 2), 10) - 1;
+            const day = parseInt(cleanStr.substr(6, 2), 10);
+            if (isDateOnly) {
+                return { date: new Date(year, month, day), isDate: true };
+            } else {
+                const hour = parseInt(cleanStr.substr(8, 2) || '0', 10);
+                const minute = parseInt(cleanStr.substr(10, 2) || '0', 10);
+                const second = parseInt(cleanStr.substr(12, 2) || '0', 10);
+                if (dateStr.endsWith('Z')) {
+                    return { date: new Date(Date.UTC(year, month, day, hour, minute, second)), isDate: false };
+                } else {
+                    return { date: new Date(year, month, day, hour, minute, second), isDate: false };
+                }
+            }
+        }
+
+        function isCalendarDateSameDay(date, referenceDate) {
+            if (!(date instanceof Date) || isNaN(date)) {
+                return false;
+            }
+            const compareDate = new Date(date);
+            compareDate.setHours(0, 0, 0, 0);
+            const refDate = new Date(referenceDate);
+            refDate.setHours(0, 0, 0, 0);
+            return compareDate.getTime() === refDate.getTime();
+        }
+
+        function displayCalendarEvents(events) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+            const targetDate = showingToday ? today : tomorrow;
+            const filteredEvents = events.filter(event => event.dtstart && isCalendarDateSameDay(event.dtstart, targetDate));
+            if (filteredEvents.length === 0) {
+                calendarEventsList.innerHTML = '<div class="loading">No events scheduled</div>';
+                return;
+            }
+            filteredEvents.sort((a, b) => {
+                if (a.dtstartIsDate && !b.dtstartIsDate) return -1;
+                if (!a.dtstartIsDate && b.dtstartIsDate) return 1;
+                if (a.dtstartIsDate && b.dtstartIsDate) return 0;
+                return a.dtstart.getTime() - b.dtstart.getTime();
+            });
+            calendarEventsList.innerHTML = filteredEvents.map(event => {
+                let timeString = '';
+                if (event.dtstartIsDate) {
+                    timeString = 'All Day';
+                } else {
+                    timeString = formatCalendarTime(event.dtstart);
+                    if (event.dtend && !event.dtendIsDate && event.dtend.getTime() !== event.dtstart.getTime()) {
+                        timeString += ` - ${formatCalendarTime(event.dtend)}`;
+                    }
+                }
+                return `
+                    <div class="event">
+                        <div class="event-title">${event.summary || 'No Title'}</div>
+                        <div class="event-time">${timeString}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCalendarDay() {
+    const eventsList = document.getElementById('events-list');
+    const dateHeader = document.getElementById('current-date');
+    
+    // Añadir clases de fade out
+    eventsList.classList.add('fade-out');
+    dateHeader.classList.add('fade-out');
+    
+    // Esperar a que termine la animación de fade out
+    setTimeout(() => {
+        // Cambiar el día
+        showingToday = !showingToday;
+        
+        // Actualizar el contenido
+        updateCalendarDate();
+        fetchCalendarEvents();
+        
+        // Forzar un reflow
+        void eventsList.offsetWidth;
+        void dateHeader.offsetWidth;
+        
+        // Quitar las clases de fade out y añadir fade in
+        eventsList.classList.remove('fade-out');
+        dateHeader.classList.remove('fade-out');
+        eventsList.classList.add('fade-in');
+        dateHeader.classList.add('fade-in');
+        
+        // Limpiar las clases de fade in después de la animación
+        setTimeout(() => {
+            eventsList.classList.remove('fade-in');
+            dateHeader.classList.remove('fade-in');
+        }, 500);
+    }, 500);
+}
+
+function startAutoCycle() {
+    setInterval(() => {
+        toggleCalendarDay();
+    }, 15000); // Cambiado a 15 segundos para dar más tiempo a leer
+}
+function displayCalendarEvents(events) {
+    const eventsList = document.getElementById('events-list');
+    
+    // Preparar el nuevo contenido
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+    const targetDate = showingToday ? today : tomorrow;
+    const filteredEvents = events.filter(event => event.dtstart && isCalendarDateSameDay(event.dtstart, targetDate));
+    
+    let newContent = '';
+    if (filteredEvents.length === 0) {
+        newContent = '<div class="loading-spinner"></div>';
+    } else {
+        filteredEvents.sort((a, b) => {
+            if (a.dtstartIsDate && !b.dtstartIsDate) return -1;
+            if (!a.dtstartIsDate && b.dtstartIsDate) return 1;
+            if (a.dtstartIsDate && b.dtstartIsDate) return 0;
+            return a.dtstart.getTime() - b.dtstart.getTime();
+        });
+        
+        newContent = filteredEvents.map(event => {
+            let timeString = '';
+            if (event.dtstartIsDate) {
+                timeString = 'All Day';
+            } else {
+                timeString = formatCalendarTime(event.dtstart);
+                if (event.dtend && !event.dtendIsDate && event.dtend.getTime() !== event.dtstart.getTime()) {
+                    timeString += ` - ${formatCalendarTime(event.dtend)}`;
+                }
+            }
+            return `
+                <div class="event">
+                    <div class="event-title">${event.summary || 'No Title'}</div>
+                    <div class="event-time">${timeString}</div>
+                </div>
+            `;
+        }).join('');
     }
     
-    // Obtenemos el contenido del archivo como texto
-    const calendarText = await response.text();
-
-    // Procesamos el contenido del archivo ICS
-    const events = parseICS(calendarText);
-
-    // Mostrar los eventos en el HTML
-    displayEvents(events);
-  } catch (error) {
-    console.error('Error al cargar los eventos:', error);
-    document.getElementById('eventContainer').innerHTML = 'Error cargando eventos.';
-  }
+    // Actualizar el contenido con la transición
+    eventsList.style.opacity = '0';
+    eventsList.style.transform = 'translateX(-20px)';
+    
+    setTimeout(() => {
+        eventsList.innerHTML = newContent;
+        
+        // Forzar un reflow
+        void eventsList.offsetWidth;
+        
+        eventsList.style.opacity = '1';
+        eventsList.style.transform = 'translateX(0)';
+    }, 300);
+    updateWeather(events);
 }
 
-// Función para parsear el archivo ICS y extraer los eventos
-function parseICS(icsText) {
-  const events = [];
-  
-  // Separamos el archivo ICS en líneas
-  const lines = icsText.split('\n');
-  
-  let event = null;
-  
-  // Recorremos las líneas para buscar los eventos
-  lines.forEach(line => {
-    if (line.startsWith('BEGIN:VEVENT')) {
-      event = {};
-    } else if (line.startsWith('SUMMARY:')) {
-      event.summary = line.replace('SUMMARY:', '').trim();
-    } else if (line.startsWith('DTSTART:')) {
-      event.start = line.replace('DTSTART:', '').trim();
-    } else if (line.startsWith('DTEND:')) {
-      event.end = line.replace('DTEND:', '').trim();
-    } else if (line.startsWith('LOCATION:')) {
-      event.location = line.replace('LOCATION:', '').trim();
-    } else if (line.startsWith('END:VEVENT')) {
-      events.push(event);
-      event = null;
-    }
-  });
-  
-  return events;
+function updateCalendarDate() {
+    const dateElement = document.getElementById('current-date');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const date = showingToday ? new Date() : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    dateElement.textContent = date.toLocaleDateString('en-US', options);
 }
 
-// Función para mostrar los eventos en el contenedor de la página
-function displayEvents(events) {
-  const container = document.getElementById('eventContainer');
-  
-  // Limpiamos cualquier contenido previo
-  container.innerHTML = '';
+        updateCalendarDate();
+        fetchCalendarEvents();
+        startAutoCycle();
 
-  if (events.length === 0) {
-    container.innerHTML = 'No hay eventos disponibles.';
-  } else {
-    events.forEach(event => {
-      const eventElement = document.createElement('div');
-      eventElement.innerHTML = `
-        <h3>${event.summary || 'Evento sin nombre'}</h3>
-        <p><strong>Fecha de inicio:</strong> ${event.start || 'Desconocida'}</p>
-        <p><strong>Fecha de finalización:</strong> ${event.end || 'Desconocida'}</p>
-        <p><strong>Ubicación:</strong> ${event.location || 'No especificada'}</p>
-        <hr>
-      `;
-      container.appendChild(eventElement);
-    });
-  }
-}
-
-
+        setInterval(() => {
+            console.log("Updating calendar...");
+            fetchCalendarEvents();
+        }, 300000);
 </script>
 </body>
 </html>
