@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Control de luces Hue</title>
+  <title>Smart Home</title>
   <style>
     html, body {
       margin: 0;
@@ -42,15 +42,13 @@
       overflow: hidden;
     }
 
-.star {
-  position: absolute;
-  border-radius: 50%;
-  background-color: white;
-  opacity: 0;
-  animation: appearStar 1s forwards, twinkle 2s infinite;
-}
-
-
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background-color: white;
+      opacity: 0;
+      animation: appearStar 1s forwards, twinkle 2s infinite;
+    }
 
     @keyframes appearStar {
       0% { opacity: 0; }
@@ -66,61 +64,33 @@
       transition: fill 2s ease;
     }
 
-    .fab {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      background-color: #ffd700;
-      color: black;
-      font-size: 28px;
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-      cursor: pointer;
-      z-index: 999;
-      transition: background 0.3s;
-    }
-
-    .fab:hover {
-      background-color: #ffc107;
-    }
-
     .panel-container {
       position: fixed;
-      bottom: 100px;
-      left: 20px;
-      width: calc(100vw - 40px);
-      max-width: 100%;
+      top: 0;
+      left: 0;
+      width: 30vw;
+      height: 40vh;
+      padding: 16px;
+      box-sizing: border-box;
       z-index: 998;
     }
 
     .panel {
       display: flex;
-      flex-direction: row;
-      gap: 16px;
-      padding: 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
       background: #ffffff80;
-      border-radius: 24px;
+      border-radius: 16px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      transform: translateX(-100%);
-      opacity: 0;
-      transition: transform 0.7s ease, opacity 0.7s ease;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-    }
-
-    .panel.show {
-      transform: translateX(0);
-      opacity: 1;
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
     }
 
     .light-box {
-      width: 100px;
-      height: 100px;
+      width: 80px;
+      height: 80px;
       background-color: #ffffff;
       border-radius: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -131,21 +101,8 @@
       overflow: hidden;
       position: relative;
       flex-shrink: 0;
-    }
-
-    .image-wrapper {
-      width: 80%;
-      height: 80%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .image-wrapper img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-      display: block;
+      cursor: pointer;
+      transition: transform 0.3s ease;
     }
 
     .light-box:hover {
@@ -159,7 +116,7 @@
       position: absolute;
       top: 0;
       left: 0;
-      transition: opacity 2s ease;
+      transition: opacity 1s ease;
       padding: 8px;
     }
 
@@ -190,11 +147,26 @@
       width: 100%;
       height: 100%;
     }
+
+    /* Nueva caja para la cuenta regresiva */
+    .countdown-container {
+      position: fixed;
+      top: 50px;
+      right: 20px;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .countdown {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-
-<div class="fab" id="togglePanel">💡</div>
 
 <div class="panel-container">
   <div class="panel" id="lightPanel"></div>
@@ -213,6 +185,70 @@
 <div class="atmosphere"></div>
 <div class="stars"></div>
 
+<!-- Caja para la cuenta regresiva -->
+<div class="countdown-container">
+  <div class="countdown" id="countdown"></div>
+</div>
+
+<script>
+  // Los horarios del bus
+  const grosvenorToHQSchedule = [
+    { gros: "00:43", hq: "01:03" }, { gros: "01:03", hq: "01:23" }, { gros: "01:23", hq: "01:43" },
+    { gros: "01:43", hq: "02:03" }, { gros: "02:03", hq: "02:23" }, { gros: "02:23", hq: "02:43" },
+    { gros: "02:53", hq: "03:13" }, { gros: "03:23", hq: "03:43" }, { gros: "03:53", hq: "04:13" },
+    { gros: "04:23", hq: "04:43" }, { gros: "04:48", hq: "05:08" }, { gros: "05:08", hq: "05:28" },
+    { gros: "05:28", hq: "05:48" }, { gros: "05:53", hq: "06:13" }, { gros: "06:13", hq: "06:33" },
+    { gros: "06:33", hq: "06:53" }, { gros: "06:53", hq: "07:13" }, { gros: "07:13", hq: "07:33" },
+    { gros: "07:38", hq: "07:58" }, { gros: "08:03", hq: "08:23" }, { gros: "08:28", hq: "08:48" },
+    { gros: "08:53", hq: "09:13" }, { gros: "09:18", hq: "09:38" }, { gros: "09:48", hq: "10:08" },
+    { gros: "10:13", hq: "10:33" }, { gros: "10:38", hq: "10:58" }, { gros: "11:03", hq: "11:23" },
+    { gros: "11:28", hq: "11:48" }, { gros: "11:53", hq: "12:13" }, { gros: "12:18", hq: "12:38" },
+    { gros: "12:38", hq: "12:58" }, { gros: "12:58", hq: "13:18" }, { gros: "13:18", hq: "13:38" },
+    { gros: "13:38", hq: "13:58" }, { gros: "13:58", hq: "14:18" }, { gros: "14:18", hq: "14:38" },
+    { gros: "14:43", hq: "15:03" }, { gros: "15:08", hq: "15:28" }, { gros: "15:33", hq: "15:53" },
+    { gros: "15:58", hq: "16:18" }, { gros: "16:23", hq: "16:43" }, { gros: "16:48", hq: "17:08" },
+    { gros: "17:17", hq: "17:39" }, { gros: "17:42", hq: "18:04" }, { gros: "18:07", hq: "18:32" },
+    { gros: "18:32", hq: "18:57" }, { gros: "18:57", hq: "19:22" }, { gros: "19:22", hq: "19:47" },
+    { gros: "19:47", hq: "20:12" }, { gros: "20:12", hq: "20:34" }, { gros: "20:37", hq: "20:59" },
+    { gros: "21:00", hq: "21:20" }, { gros: "21:23", hq: "21:43" }, { gros: "21:48", hq: "22:08" },
+    { gros: "22:13", hq: "22:33" }, { gros: "22:38", hq: "22:58" }, { gros: "23:03", hq: "23:23" },
+    { gros: "23:28", hq: "23:48" }, { gros: "23:53", hq: "00:13" }, { gros: "00:18", hq: "00:38" }
+  ];
+
+  function updateCountdown() {
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    let nextBus = null;
+    for (let i = 0; i < grosvenorToHQSchedule.length; i++) {
+      if (currentTime < grosvenorToHQSchedule[i].gros) {
+        nextBus = grosvenorToHQSchedule[i];
+        break;
+      }
+    }
+
+    if (nextBus) {
+      const busTime = new Date();
+      const [hour, minute] = nextBus.gros.split(':').map(num => parseInt(num, 10));
+      busTime.setHours(hour, minute, 0, 0);
+
+      const timeRemaining = busTime - now;
+      const minutesRemaining = Math.floor(timeRemaining / 60000);
+      const secondsRemaining = Math.floor((timeRemaining % 60000) / 1000);
+
+      document.getElementById('countdown').innerText = `Siguiente bus en ${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
+    } else {
+      document.getElementById('countdown').innerText = "No más buses hoy.";
+    }
+  }
+
+  // Actualizar la cuenta regresiva cada segundo
+  setInterval(updateCountdown, 1000);  // Se actualiza cada segundo
+</script>
+
+</body>
+</html>
+
 <script>
   const BRIDGE_IP = "192.168.86.245";
   const USERNAME = "z7nNaSwtiToHfwMi5kUSLrS1u8LhLpv7Y2eMComM";
@@ -230,11 +266,6 @@
   ];
 
   const panel = document.getElementById('lightPanel');
-  const togglePanelBtn = document.getElementById('togglePanel');
-
-  togglePanelBtn.addEventListener('click', () => {
-    panel.classList.toggle('show');
-  });
 
   async function getLightState(id) {
     const res = await fetch(`http://${BRIDGE_IP}/api/${USERNAME}/lights/${id}`);
@@ -285,36 +316,35 @@
 
   createLightBoxes();
 
-function setDynamicBackground() {
-  const now = new Date(); // Hora local del navegador
-  const hour = now.getHours();
+  function setDynamicBackground() {
+    const now = new Date();
+    const hour = now.getHours();
 
-  let gradient = '';
-  let duneColor = '';
+    let gradient = '';
+    let duneColor = '';
 
-  if (hour >= 5 && hour < 7) {
-    gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)'; // Amanecer
-    duneColor = '#F4D9B0';
-  } else if (hour >= 7 && hour < 11) {
-    gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)'; // Mañana
-    duneColor = '#F7E6B6';
-  } else if (hour >= 11 && hour < 15) {
-    gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)'; // Mediodía
-    duneColor = '#FCE7A5';
-  } else if (hour >= 15 && hour < 18) {
-    gradient = 'linear-gradient(to top, #FF6347, #FF4500)'; // Tarde
-    duneColor = '#E6B07D';
-  } else {
-    gradient = 'linear-gradient(to top, #001f3f, #000000)'; // Noche
-    duneColor = '#3A2B47';
-    createStars();
+    if (hour >= 5 && hour < 7) {
+      gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)';
+      duneColor = '#F4D9B0';
+    } else if (hour >= 7 && hour < 11) {
+      gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)';
+      duneColor = '#F7E6B6';
+    } else if (hour >= 11 && hour < 15) {
+      gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)';
+      duneColor = '#FCE7A5';
+    } else if (hour >= 15 && hour < 18) {
+      gradient = 'linear-gradient(to top, #FF6347, #FF4500)';
+      duneColor = '#E6B07D';
+    } else {
+      gradient = 'linear-gradient(to top, #001f3f, #000000)';
+      duneColor = '#3A2B47';
+      createStars();
+    }
+
+    document.body.style.backgroundImage = gradient;
+    const dune = document.getElementById('duneShape');
+    if (dune) dune.setAttribute('fill', duneColor);
   }
-
-document.body.style.backgroundImage = gradient;
-
-  const dune = document.getElementById('duneShape');
-  if (dune) dune.setAttribute('fill', duneColor);
-}
 
   function createStars(count = 100) {
     const container = document.querySelector('.stars');
