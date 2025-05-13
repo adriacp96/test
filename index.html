@@ -27,6 +27,16 @@
       z-index: -3;
     }
 
+    .sun, .moon {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      display: none;
+    }
+
     .atmosphere {
       pointer-events: none;
       position: fixed;
@@ -67,40 +77,40 @@
       50% { opacity: 1; }
     }
 
-.info-container {
-  position: fixed;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 20px;  /* Reducido un poco el tamaño de la fuente */
-  font-weight: bold;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  z-index: 999;
-  white-space: nowrap;  /* Previene el salto de línea */
-}
+    .info-container {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      z-index: 999;
+      white-space: nowrap;
+    }
 
-.info-box {
-  background: #ffffff72;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  white-space: nowrap;  /* Evita el salto de línea */
-  overflow: hidden;  /* Oculta el contenido desbordado */
-  text-overflow: ellipsis;  /* Añade puntos suspensivos si el contenido es demasiado largo */
-}
-
+    .info-box {
+      background: #ffffff72;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     .panel-container {
       position: fixed;
-      top: 0;
-      left: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       width: 30vw;
       height: 40vh;
       padding: 16px;
@@ -180,26 +190,30 @@
       width: 100%;
       height: 100%;
     }
-    .countdown-box {
-      position: fixed;
-      top: 6px;
-      right: 6px;
-      align-items: center;
-      font-size: 24px;
-      font-weight: bold;
-      background-color: rgba(255, 255, 255, 0.5);
-      color: rgb(0, 0, 0);
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      margin: 10px;
-      text-align: center;
-      width: max-content;
-    }
+
+  .countdown-box {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    font-weight: bold;
+    background-color: rgba(255, 255, 255, 0.5);
+    color: rgb(0, 0, 0);
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    margin: 10px;
+    text-align: center;
+    width: max-content;
+  }
   </style>
 </head>
 
 <body>
+<div class="sun-and-moon">
+  <span id="sun" style="position: absolute; top: 30px; right: 50px; font-size: 80px;">☀️</span>
+  <span id="moon" style="position: absolute; top: 30px; right: 50px; font-size: 80px; display: none;">🌙</span>
+</div>
 
 <div class="panel-container">
   <div class="panel" id="lightPanel"></div>
@@ -365,35 +379,35 @@
 
   createLightBoxes();
 
-function setDynamicBackground() {
-  const now = new Date();
-  const hour = now.getHours();
+  function setDynamicBackground() {
+    const now = new Date();
+    const hour = now.getHours();
 
-  let gradient = '';
-  let duneColor = '';
+    let gradient = '';
+    let duneColor = '';
 
-  if (hour >= 5 && hour < 7) {
-    gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)';
-    duneColor = '#F4D9B0';
-  } else if (hour >= 7 && hour < 11) {
-    gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)';
-    duneColor = '#F7E6B6';
-  } else if (hour >= 11 && hour < 15) {
-    gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)';
-    duneColor = '#FCE7A5';
-  } else if (hour >= 15 && hour < 18) {
-    gradient = 'linear-gradient(to top, #FF6347, #FF4500)';
-    duneColor = '#E6B07D';
-  } else {
-    gradient = 'linear-gradient(to top, #001f3f, #000000)';
-    duneColor = '#3A2B47';
-    createStars();
+    if (hour >= 5 && hour < 7) {
+      gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)';
+      duneColor = '#F4D9B0';
+    } else if (hour >= 7 && hour < 11) {
+      gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)';
+      duneColor = '#F7E6B6';
+    } else if (hour >= 11 && hour < 15) {
+      gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)';
+      duneColor = '#FCE7A5';
+    } else if (hour >= 15 && hour < 18) {
+      gradient = 'linear-gradient(to top, #FF6347, #FF4500)';
+      duneColor = '#E6B07D';
+    } else {
+      gradient = 'linear-gradient(to top, #001f3f, #000000)';
+      duneColor = '#3A2B47';
+      createStars();
+    }
+
+    document.body.style.backgroundImage = gradient;
+    const dune = document.getElementById('duneShape');
+    if (dune) dune.setAttribute('fill', duneColor);
   }
-
-  document.body.style.backgroundImage = gradient;
-  const dune = document.getElementById('duneShape');
-  if (dune) dune.setAttribute('fill', duneColor);
-}
 
   function createStars(count = 100) {
     const container = document.querySelector('.stars');
@@ -429,7 +443,6 @@ async function fetchDubaiWeather() {
     const current = data.current;
     const today = data.daily;
 
-    // Mostrar la información en una sola línea
     const html = `🌡 ${current.temperature_2m}°C (min: ${today.temperature_2m_min[0]}°C / max: ${today.temperature_2m_max[0]}°C) 
                   💧 ${current.relative_humidity_2m}% 
                   🌅 ${today.sunrise[0].split('T')[1]} / 🌇 ${today.sunset[0].split('T')[1]}`;
@@ -444,6 +457,30 @@ async function fetchDubaiWeather() {
   setInterval(updateTimeAndDate, 1000);
   updateTimeAndDate();
   fetchDubaiWeather();
+  </script>
+<script>
+    // Detectar hora y mostrar sol o luna
+    function updateSunAndMoon() {
+      const now = new Date();
+      const hour = now.getHours();
+
+      const sun = document.getElementById('sun');
+      const moon = document.getElementById('moon');
+
+      if (hour >= 6 && hour < 18) {
+        // Mostrar sol durante el día
+        sun.style.display = 'block';
+        moon.style.display = 'none';
+      } else {
+        // Mostrar luna durante la noche
+        sun.style.display = 'none';
+        moon.style.display = 'block';
+      }
+    }
+
+    // Actualizar sol y luna cada vez que cambie la hora
+    setInterval(updateSunAndMoon, 60000);
+    updateSunAndMoon(); // Llamar inmediatamente para inicializar
   </script>
 </body>
 </html>
