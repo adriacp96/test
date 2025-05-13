@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Smart Home</title>
+  <title>Control de luces Hue</title>
   <style>
+    @font-face {
+    font-family: 'Emirates Bold';
+    src: url('https://c.ekstatic.net/shared/fonts/emirates/emirates-bold-v3.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
@@ -11,7 +18,7 @@
     }
 
     body {
-      font-family: sans-serif;
+      font-family: 'Emirates Bold', sans-serif;
       background-repeat: no-repeat;
       background-attachment: fixed;
       background-size: cover;
@@ -148,12 +155,11 @@
       height: 100%;
     }
 
-    /* Nueva caja para la cuenta regresiva */
     .countdown-container {
       position: fixed;
-      top: 50px;
+      top: 20px;
       right: 20px;
-      background-color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(255, 255, 255, 0.463);
       padding: 16px;
       border-radius: 12px;
       font-size: 18px;
@@ -164,6 +170,50 @@
     .countdown {
       text-align: center;
     }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 30px;
+      margin: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.2em;
+      color: #333;
+    }
+
+    .value {
+      font-size: 1.6em;
+      color: #0077b6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Hora actual</h2>
+    <div id="hora" class="value">--:--:--</div>
+  </div>
+
+  <div class="card">
+    <h2>Fecha actual</h2>
+    <div id="fecha" class="value">--</div>
+  </div>
+
+  <div class="card">
+    <h2>Clima en Dubái</h2>
+    <div class="value">
+      <div>🌡️ Máx: <span id="tempMax">--</span>°C</div>
+      <div>🌡️ Mín: <span id="tempMin">--</span>°C</div>
+      <div>💧 Humedad: <span id="humedad">--</span>%</div>
+      <div>🌅 Amanecer: <span id="amanecer">--:--</span></div>
+      <div>🌇 Atardecer: <span id="atardecer">--:--</span></div>
+    </div>
+  </div>
   </style>
 </head>
 <body>
@@ -366,6 +416,32 @@
   setDynamicBackground();
   setInterval(setDynamicBackground, 60000);
 </script>
+  <script>
+    function actualizarHoraYFecha() {
+      const ahora = new Date();
+      const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('hora').textContent = ahora.toLocaleTimeString('es-ES');
+      document.getElementById('fecha').textContent = ahora.toLocaleDateString('es-ES', opcionesFecha);
+    }
 
+    // Actualizar cada segundo
+    setInterval(actualizarHoraYFecha, 1000);
+    actualizarHoraYFecha();
+
+    // Datos meteorológicos estáticos
+    const climaDubai = {
+      tempMax: 40,
+      tempMin: 28,
+      humedad: 40,
+      amanecer: '05:35',
+      atardecer: '18:56'
+    };
+
+    document.getElementById('tempMax').textContent = climaDubai.tempMax;
+    document.getElementById('tempMin').textContent = climaDubai.tempMin;
+    document.getElementById('humedad').textContent = climaDubai.humedad;
+    document.getElementById('amanecer').textContent = climaDubai.amanecer;
+    document.getElementById('atardecer').textContent = climaDubai.atardecer;
+  </script>
 </body>
 </html>
