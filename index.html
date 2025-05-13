@@ -365,35 +365,35 @@
 
   createLightBoxes();
 
-  function setDynamicBackground() {
-    const now = new Date();
-    const hour = now.getHours();
+function setDynamicBackground() {
+  const now = new Date();
+  const hour = now.getHours();
 
-    let gradient = '';
-    let duneColor = '';
+  let gradient = '';
+  let duneColor = '';
 
-    if (hour >= 5 && hour < 7) {
-      gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)';
-      duneColor = '#F4D9B0';
-    } else if (hour >= 7 && hour < 11) {
-      gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)';
-      duneColor = '#F7E6B6';
-    } else if (hour >= 11 && hour < 15) {
-      gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)';
-      duneColor = '#FCE7A5';
-    } else if (hour >= 15 && hour < 18) {
-      gradient = 'linear-gradient(to top, #FF6347, #FF4500)';
-      duneColor = '#E6B07D';
-    } else {
-      gradient = 'linear-gradient(to top, #001f3f, #000000)';
-      duneColor = '#3A2B47';
-      createStars();
-    }
-
-    document.body.style.backgroundImage = gradient;
-    const dune = document.getElementById('duneShape');
-    if (dune) dune.setAttribute('fill', duneColor);
+  if (hour >= 5 && hour < 7) {
+    gradient = 'linear-gradient(to top, #FFB6C1, #FFD700)';
+    duneColor = '#F4D9B0';
+  } else if (hour >= 7 && hour < 11) {
+    gradient = 'linear-gradient(to top, #87CEFA, #B0E0E6)';
+    duneColor = '#F7E6B6';
+  } else if (hour >= 11 && hour < 15) {
+    gradient = 'linear-gradient(to top, #ADD8E6, #FFD700)';
+    duneColor = '#FCE7A5';
+  } else if (hour >= 15 && hour < 18) {
+    gradient = 'linear-gradient(to top, #FF6347, #FF4500)';
+    duneColor = '#E6B07D';
+  } else {
+    gradient = 'linear-gradient(to top, #001f3f, #000000)';
+    duneColor = '#3A2B47';
+    createStars();
   }
+
+  document.body.style.backgroundImage = gradient;
+  const dune = document.getElementById('duneShape');
+  if (dune) dune.setAttribute('fill', duneColor);
+}
 
   function createStars(count = 100) {
     const container = document.querySelector('.stars');
