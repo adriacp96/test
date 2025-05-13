@@ -206,10 +206,28 @@
     text-align: center;
     width: max-content;
   }
+    .event-container {
+      position: fixed;
+      top: 50%;
+      right: 6px;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      width: 300px;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
   </style>
 </head>
 
 <body>
+
+<div id="eventContainer" class="event-container">
+  Cargando eventos...
+</div>
+
 <div class="sun-and-moon">
   <span id="sun" style="position: absolute; top: 30px; right: 50px; font-size: 80px;">☀️</span>
   <span id="moon" style="position: absolute; top: 30px; right: 50px; font-size: 80px; display: none;">🌙</span>
@@ -241,7 +259,6 @@
 <div class="atmosphere"></div>
 <div class="stars"></div>
 
-<!-- Caja para la cuenta regresiva -->
 <div class="countdown-container">
   <div class="countdown" id="countdown"></div>
 </div>
@@ -459,7 +476,6 @@ async function fetchDubaiWeather() {
   fetchDubaiWeather();
   </script>
 <script>
-    // Detectar hora y mostrar sol o luna
     function updateSunAndMoon() {
       const now = new Date();
       const hour = now.getHours();
@@ -468,19 +484,98 @@ async function fetchDubaiWeather() {
       const moon = document.getElementById('moon');
 
       if (hour >= 6 && hour < 18) {
-        // Mostrar sol durante el día
         sun.style.display = 'block';
         moon.style.display = 'none';
       } else {
-        // Mostrar luna durante la noche
         sun.style.display = 'none';
         moon.style.display = 'block';
       }
     }
 
-    // Actualizar sol y luna cada vez que cambie la hora
     setInterval(updateSunAndMoon, 60000);
-    updateSunAndMoon(); // Llamar inmediatamente para inicializar
+    updateSunAndMoon();
   </script>
+<script>
+  // Function to fetch events from the iCloud calendar and update the event container
+async function fetchEvents() {
+  try {
+    const calendarUrl = 'https://p108-caldav.icloud.com/published/2/MTUxMDYwNTYxNDE1MTA2MOcLt9DeC6aDOBzlZCUDejDdugx2IBT9HDhJA6jGIXwDHsR2_c0JH71EnIqBSkhBPTX-OE44UuANI0LecwDIOcg';
+
+    // Intentamos obtener el archivo del calendario
+    const response = await fetch(calendarUrl);
+    if (!response.ok) {
+      throw new Error('No se pudo acceder al calendario. Código de error: ' + response.status);
+    }
+    
+    // Obtenemos el contenido del archivo como texto
+    const calendarText = await response.text();
+
+    // Procesamos el contenido del archivo ICS
+    const events = parseICS(calendarText);
+
+    // Mostrar los eventos en el HTML
+    displayEvents(events);
+  } catch (error) {
+    console.error('Error al cargar los eventos:', error);
+    document.getElementById('eventContainer').innerHTML = 'Error cargando eventos.';
+  }
+}
+
+// Función para parsear el archivo ICS y extraer los eventos
+function parseICS(icsText) {
+  const events = [];
+  
+  // Separamos el archivo ICS en líneas
+  const lines = icsText.split('\n');
+  
+  let event = null;
+  
+  // Recorremos las líneas para buscar los eventos
+  lines.forEach(line => {
+    if (line.startsWith('BEGIN:VEVENT')) {
+      event = {};
+    } else if (line.startsWith('SUMMARY:')) {
+      event.summary = line.replace('SUMMARY:', '').trim();
+    } else if (line.startsWith('DTSTART:')) {
+      event.start = line.replace('DTSTART:', '').trim();
+    } else if (line.startsWith('DTEND:')) {
+      event.end = line.replace('DTEND:', '').trim();
+    } else if (line.startsWith('LOCATION:')) {
+      event.location = line.replace('LOCATION:', '').trim();
+    } else if (line.startsWith('END:VEVENT')) {
+      events.push(event);
+      event = null;
+    }
+  });
+  
+  return events;
+}
+
+// Función para mostrar los eventos en el contenedor de la página
+function displayEvents(events) {
+  const container = document.getElementById('eventContainer');
+  
+  // Limpiamos cualquier contenido previo
+  container.innerHTML = '';
+
+  if (events.length === 0) {
+    container.innerHTML = 'No hay eventos disponibles.';
+  } else {
+    events.forEach(event => {
+      const eventElement = document.createElement('div');
+      eventElement.innerHTML = `
+        <h3>${event.summary || 'Evento sin nombre'}</h3>
+        <p><strong>Fecha de inicio:</strong> ${event.start || 'Desconocida'}</p>
+        <p><strong>Fecha de finalización:</strong> ${event.end || 'Desconocida'}</p>
+        <p><strong>Ubicación:</strong> ${event.location || 'No especificada'}</p>
+        <hr>
+      `;
+      container.appendChild(eventElement);
+    });
+  }
+}
+
+
+</script>
 </body>
 </html>
