@@ -191,7 +191,7 @@
       height: 100%;
     }
 
-  .countdown-box {
+    .countdown-box {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
@@ -205,15 +205,76 @@
     margin: 10px;
     text-align: center;
     width: max-content;
-  }
+    }
+
+    #calendar-window {
+    position: fixed;
+    width: 100%;
+    height: 200px;
+    background-color: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    overflow: hidden;
+    }
+    #current-date {
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .fade-date-out {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    .fade-date-in {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    #events-list {
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .fade-events-out {
+        opacity: 0;
+        transform: translateX(-15px);
+    }
+
+    .fade-events-in {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .loading-spinner {
+        border: 3px solid rgba(0,0,0,0.1);
+        border-top: 3px solid #444;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .event {
+        margin-bottom: 10px;
+    }
+
+    .event-title {
+        font-weight: bold;
+    }
+
+    .event-time {
+        font-size: 13px;
+        color: #555;
+    }
   </style>
 </head>
 
 <body>
-
-<div id="eventContainer" class="event-container">
-  Loading events...
-</div>
 
 <div class="sun-and-moon">
   <span id="sun" style="position: absolute; top: 30px; right: 50px; font-size: 80px;">☀️</span>
@@ -223,14 +284,14 @@
 <div class="panel-container">
   <div class="panel" id="lightPanel"></div>
   <div id="countdown" class="countdown-box">
-    Loading...
+    Cargando...
   </div>
 </div>
 
 <div class="info-container">
   <div class="info-box" id="currentTime">Hora actual: --:--:--</div>
   <div class="info-box" id="currentDate">Fecha: --/--/----</div>
-  <div class="info-box" id="dubaiWeather">Loading weather...</div>
+  <div class="info-box" id="dubaiWeather">Cargando clima de Dubái...</div>
 </div>
 
 <div class="desert-dune">
@@ -297,7 +358,7 @@
   function updateCountdown() {
     const nextBusTime = getNextBusTime();
     if (nextBusTime === null) {
-      document.getElementById('countdown').innerText = 'No hay más buses hoy.';
+      document.getElementById('countdown').innerText = 'No more buses today';
       return;
     }
 
@@ -312,11 +373,12 @@
   setInterval(updateCountdown, 1000);
   updateCountdown();
 </script>
-<div id="calendar-window" style="position: fixed; bottom: 20px; left: 20px; width: 320px; height: 320px; background: #ffffff73; border-radius: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 18px; z-index: 1000; text-align: center;">
-    <h2 id="calendarTitle" style="margin: 0 0 10px 0; font-size: 20px; text-align: center;">ROSTER</h2>
-    <div id="current-date" style="font-size: 18px; margin-bottom: 18px; text-align: center;"></div>
+<div id="calendar-window" style="position: fixed; top: 50%; left: 20px; transform: translateY(-50%); width: 320px; background: #ffffff78; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); padding: 16px; z-index: 1000;">
+  <div id="calendar-title-bar" style="cursor: move;">
+    <div id="current-date" style="font-size: 14px; margin-bottom: 10px; text-align: center;"></div>
   </div>
-  <div id="events-list" style="font-size: 18px;"></div>
+  <div id="events-list" style="font-size: 18px; text-align: center;"></div>
+</div>
 </div>
 </body>
 </html>
@@ -720,100 +782,96 @@ async function fetchDubaiWeather() {
             }).join('');
         }
 
-        function toggleCalendarDay() {
-    const eventsList = document.getElementById('events-list');
-    const dateHeader = document.getElementById('current-date');
-    
-    // Añadir clases de fade out
-    eventsList.classList.add('fade-out');
-    dateHeader.classList.add('fade-out');
-    
-    // Esperar a que termine la animación de fade out
+function toggleCalendarDay() {
+  const eventsList = document.getElementById('events-list');
+  const dateHeader = document.getElementById('current-date');
+
+  isSwitchingDay = true; // <--- MARCA el cambio de día
+
+  eventsList.classList.add('fade-events-out');
+  dateHeader.classList.add('fade-date-out');
+
+  setTimeout(() => {
+    showingToday = !showingToday;
+
+    updateCalendarDate();
+    fetchCalendarEvents();
+
+    void eventsList.offsetWidth;
+    void dateHeader.offsetWidth;
+
+    eventsList.classList.remove('fade-events-out');
+    dateHeader.classList.remove('fade-date-out');
+
+    eventsList.classList.add('fade-events-in');
+    dateHeader.classList.add('fade-date-in');
+
     setTimeout(() => {
-        // Cambiar el día
-        showingToday = !showingToday;
-        
-        // Actualizar el contenido
-        updateCalendarDate();
-        fetchCalendarEvents();
-        
-        // Forzar un reflow
-        void eventsList.offsetWidth;
-        void dateHeader.offsetWidth;
-        
-        // Quitar las clases de fade out y añadir fade in
-        eventsList.classList.remove('fade-out');
-        dateHeader.classList.remove('fade-out');
-        eventsList.classList.add('fade-in');
-        dateHeader.classList.add('fade-in');
-        
-        // Limpiar las clases de fade in después de la animación
-        setTimeout(() => {
-            eventsList.classList.remove('fade-in');
-            dateHeader.classList.remove('fade-in');
-        }, 500);
-    }, 500);
+      eventsList.classList.remove('fade-events-in');
+      dateHeader.classList.remove('fade-date-in');
+      isSwitchingDay = false; // <--- RESTABLECE cuando termina
+    }, 400);
+  }, 400);
 }
+
+
 
 function startAutoCycle() {
     setInterval(() => {
         toggleCalendarDay();
-    }, 15000); // Cambiado a 15 segundos para dar más tiempo a leer
+    }, 15000);
 }
 function displayCalendarEvents(events) {
-    const eventsList = document.getElementById('events-list');
-    
-    // Preparar el nuevo contenido
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-    const targetDate = showingToday ? today : tomorrow;
-    const filteredEvents = events.filter(event => event.dtstart && isCalendarDateSameDay(event.dtstart, targetDate));
-    
-    let newContent = '';
-    if (filteredEvents.length === 0) {
-        newContent = '<div class="loading-spinner"></div>';
-    } else {
-        filteredEvents.sort((a, b) => {
-            if (a.dtstartIsDate && !b.dtstartIsDate) return -1;
-            if (!a.dtstartIsDate && b.dtstartIsDate) return 1;
-            if (a.dtstartIsDate && b.dtstartIsDate) return 0;
-            return a.dtstart.getTime() - b.dtstart.getTime();
-        });
-        
-        newContent = filteredEvents.map(event => {
-            let timeString = '';
-            if (event.dtstartIsDate) {
-                timeString = 'All Day';
-            } else {
-                timeString = formatCalendarTime(event.dtstart);
-                if (event.dtend && !event.dtendIsDate && event.dtend.getTime() !== event.dtstart.getTime()) {
-                    timeString += ` - ${formatCalendarTime(event.dtend)}`;
-                }
-            }
-            return `
-                <div class="event">
-                    <div class="event-title">${event.summary || 'No Title'}</div>
-                    <div class="event-time">${timeString}</div>
-                </div>
-            `;
-        }).join('');
-    }
-    
-    // Actualizar el contenido con la transición
-    eventsList.style.opacity = '0';
-    eventsList.style.transform = 'translateX(-20px)';
-    
+  const eventsList = document.getElementById('events-list');
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  const targetDate = showingToday ? today : tomorrow;
+
+  const filteredEvents = events.filter(event => event.dtstart && isCalendarDateSameDay(event.dtstart, targetDate));
+
+  let newContent = '';
+
+  if (filteredEvents.length === 0) {
+    newContent = '<div class="loading-spinner"></div><div style="text-align:center;">No events scheduled</div>';
+  } else {
+    filteredEvents.sort((a, b) => {
+      if (a.dtstartIsDate && !b.dtstartIsDate) return -1;
+      if (!a.dtstartIsDate && b.dtstartIsDate) return 1;
+      return a.dtstart.getTime() - b.dtstart.getTime();
+    });
+
+    newContent = filteredEvents.map(event => {
+      let timeString = event.dtstartIsDate ? 'All Day' : formatCalendarTime(event.dtstart);
+      if (event.dtend && !event.dtendIsDate && event.dtend.getTime() !== event.dtstart.getTime()) {
+        timeString += ` - ${formatCalendarTime(event.dtend)}`;
+      }
+      return `
+        <div class="event">
+          <div class="event-title">${event.summary || 'No Title'}</div>
+          <div class="event-time">${timeString}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Transición de salida
+  eventsList.classList.add('fade-events-out');
+
+  setTimeout(() => {
+    eventsList.innerHTML = newContent;
+
+    // Reflujo forzado
+    void eventsList.offsetWidth;
+
+    eventsList.classList.remove('fade-events-out');
+    eventsList.classList.add('fade-events-in');
+
     setTimeout(() => {
-        eventsList.innerHTML = newContent;
-        
-        // Forzar un reflow
-        void eventsList.offsetWidth;
-        
-        eventsList.style.opacity = '1';
-        eventsList.style.transform = 'translateX(0)';
-    }, 300);
-    updateWeather(events);
+      eventsList.classList.remove('fade-events-in');
+    }, 500);
+  }, 300);
 }
 
 function updateCalendarDate() {
