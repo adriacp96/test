@@ -148,7 +148,7 @@
     .panel {
       display: flex;
       justify-content: center;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       gap: 8px;
       padding: 12px;
       background: #ffffff80;
@@ -305,10 +305,10 @@
 </div>
 
 <div class="info-container">
-  <div class="info-box" id="currentTime">Hora actual: --:--:--</div>
-  <div class="info-box" id="currentDate">Fecha: --/--/----</div>
-  <div class="info-box" id="dubaiWeather">Cargando clima de Dubái...</div>
-  <div class="info-box" id="nextBusTime">Cargando próximo bus...</div> <!-- Aquí agregamos la nueva cajetilla -->
+  <div class="info-box" id="currentTime">Local time: --:--:--</div>
+  <div class="info-box" id="currentDate">Date: --/--/----</div>
+  <div class="info-box" id="dubaiWeather">Loading weather...</div>
+  <div class="info-box" id="nextBusTime">Loading next bus...</div>
 </div>
 
 <div class="desert-dune">
@@ -396,7 +396,6 @@
   </div>
   <div id="events-list" style="font-size: 18px; text-align: center;"></div>
 </div>
-</div>
 </body>
 </html>
 
@@ -414,6 +413,11 @@
     { id: 56, name: "Techo 1", offIcon: "https://i.imghippo.com/files/Irsj8300ZI.png", onIcon: "https://i.imghippo.com/files/DRCM8831GE.png" },
     { id: 57, name: "Techo 2", offIcon: "https://i.imghippo.com/files/Irsj8300ZI.png", onIcon: "https://i.imghippo.com/files/Dtx8971zs.png" },
     { id: 58, name: "Techo 3", offIcon: "https://i.imghippo.com/files/Irsj8300ZI.png", onIcon: "https://i.imghippo.com/files/Gx6394gs.png" },
+    { id: 61, name: "Donut", offIcon: "https://i.imghippo.com/files/JRi4386YV.png", onIcon: "https://i.imghippo.com/files/vT5279BNw.png" },
+    { id: 62, name: "Palo", offIcon: "https://i.imghippo.com/files/gMqe4673bQ.png", onIcon: "https://i.imghippo.com/files/PuTO4998Ck.png" },
+    { id: 63, name: "Moschino", offIcon: "https://i.imghippo.com/files/AgQ1940RDU.png", onIcon: "https://i.imghippo.com/files/Cqu4783xMI.png" },
+    { id: 64, name: "Deshumidificador", offIcon: "https://i.imghippo.com/files/WrH1730SIE.png", onIcon: "https://i.imghippo.com/files/noWI9632cuM.png" }
+
   ];
 
   const panel = document.getElementById('lightPanel');
